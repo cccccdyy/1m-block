@@ -10,8 +10,10 @@
 #include <linux/types.h>
 #include <linux/netfilter.h>		/* for NF_ACCEPT */
 #include <errno.h>
+#include <time.h>
 #include "iphdr.h"
 #include "tcphdr.h"
+
 #include <libnetfilter_queue/libnetfilter_queue.h>
 
 using namespace std;
@@ -34,16 +36,25 @@ void readfile(char* filename) {
 
 	uint32_t num;
 	char host_to_filter[0x100];
+	time_t before, after;
+	double diff;
+	time(&before);
 	while (fscanf(fp, "%d,%s\n", &num, host_to_filter) != EOF) {
 		string str(host_to_filter);
 		blocked.insert(str);
 	}
+	time(&after);
+	diff = difftime(after, before);
+  	printf("diff time : %lf\n", diff);
 
 	fclose(fp);
 	return;
 }
 
 void dump(unsigned char* buf, int size) {
+
+	time_t before, after;
+	double diff;
 
 	char buf_copy[size+1];
 	memset(buf_copy, 0, size); // null
@@ -97,7 +108,12 @@ void dump(unsigned char* buf, int size) {
 	char* host = strstr(http_header, "Host: ");
 	if (host) {
 		host = strtok(host + 6, "\r\n");
-		if (blocked.find(host) != blocked.end()) dropflag = 1; // hostname is in the blocked site list
+		time(&before);
+		bool exist = blocked.find(host) != blocked.end() ? true : false;
+		time(&after);
+		diff = difftime(after, before);
+  		printf("\ndiff time : %lf\n", diff);
+		if (exist) dropflag = 1; // hostname is in the blocked site list
 		else dropflag = 0;
 	}
 	else dropflag = 0;
